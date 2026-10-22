@@ -14,7 +14,7 @@ function Table({ headers, data }) {
             ))}
           </tr>
         </thead>
-
+              
         <tbody>
           {data.map((row, rowIndex) => (
             <tr

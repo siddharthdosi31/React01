@@ -1,45 +1,39 @@
+
+import {useEffect,useState} from "react";
 import Table from "./components/Table";
 
 function App() {
-  
   const headers = [
-    {name:"company",label:"Company"},
-    {name:"contact",label:"Contact"},
-    {name:"country",label:"Country"},
+    { name: "company", label: "Company" },
+    { name: "contact", label: "Contact" },
+    { name: "country", label: "Country" },
   ];
 
-  const data = [
-    {
-      company:"Alfreds Futterkiste",
-      contact:"Maria Anders",
-      country:"Germany",
-    },
-    {
-      company:"Centro comercial Moctezuma",
-      contact:"Francisco Chang",
-      country:"Mexico",
-    },
-    {
-      company:"Ernst Handel",
-      contact:"Roland Mendel",
-      country:"Austria",
-    },
-    {
-      company:"Island Trading",
-      contact:"Helen Bennett",
-      country:"UK",
-    },
-    {
-      company:"Laughing Bacchus Winecellars",
-      contact:"Yoshi Tannamuri",
-      country:"Canada",
-    },
-    {
-      company: "Magazzini Alimentari Riuniti",
-      contact: "Giovanni Rovelli",
-      country: "Italy",
-    },
-  ];
+
+  const [data, setData] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await fetch("/data.json");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch company data");
+        }
+
+        const result = await response.json();
+        setData(result);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   return (
     <main className="min-h-screen bg-gray-100 p-6 font-sans">
@@ -48,7 +42,11 @@ function App() {
           Company Directory
         </h1>
 
-        <Table headers={headers} data={data} />
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
+          <Table headers={headers} data={data} />
+        )}
       </div>
     </main>
   );
