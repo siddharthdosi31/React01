@@ -1,6 +1,11 @@
 
-import {useEffect,useState} from "react";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Table from "./components/Table";
+import {
+  fetchCompanies,
+  selectCompanyData,
+} from "./features/companies/companySlice";
 
 function App() {
   const headers = [
@@ -9,31 +14,18 @@ function App() {
     { name: "country", label: "Country" },
   ];
 
+  // Get the dispatch function
+  const dispatch = useDispatch();
 
-  const [data, setData] = useState([]);
+  // Read data and status from Redux
+  const data = useSelector(selectCompanyData);
+  const loading = useSelector((state) => state.companies.loading);
+  const error = useSelector((state) => state.companies.error);
 
-  const [loading, setLoading] = useState(true);
-
+  // Fetch data when the component mounts
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch("/data.json");
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch company data");
-        }
-
-        const result = await response.json();
-        setData(result);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, []);
+    dispatch(fetchCompanies());
+  }, [dispatch]);
 
   return (
     <main className="min-h-screen bg-gray-100 p-6 font-sans">
@@ -44,6 +36,8 @@ function App() {
 
         {loading ? (
           <p>Loading...</p>
+        ) : error ? (
+          <p className="text-red-600">Error: {error}</p>
         ) : (
           <Table headers={headers} data={data} />
         )}
