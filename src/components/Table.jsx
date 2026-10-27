@@ -1,3 +1,6 @@
+
+import PropTypes from "prop-types";
+
 function Table({ headers, data }) {
   return (
     <div className="overflow-x-auto">
@@ -14,7 +17,7 @@ function Table({ headers, data }) {
             ))}
           </tr>
         </thead>
-              
+
         <tbody>
           {data.map((row, rowIndex) => (
             <tr
@@ -36,5 +39,19 @@ function Table({ headers, data }) {
     </div>
   );
 }
+
+// Validate the props received by Table
+Table.propTypes = {
+  headers: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    }).isRequired
+  ).isRequired,
+
+  data: PropTypes.arrayOf(
+    PropTypes.object.isRequired
+  ).isRequired,
+};
 
 export default Table;
