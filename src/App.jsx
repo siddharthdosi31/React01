@@ -1,4 +1,11 @@
-
+import {
+  DE,
+  MX,
+  AT,
+  GB,
+  CA,
+  IT,
+} from "../node_modules/country-flag-icons/react/3x2";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Table from "./components/Table";
@@ -8,12 +15,37 @@ import {
 } from "./features/companies/companySlice";
 
 function App() {
+  const countryFlags = {
+  Germany: DE,
+  Mexico: MX,
+  Austria: AT,
+  UK: GB,
+  Canada: CA,
+  Italy: IT,
+};
   const headers = [
-    { name: "company", label: "Company" },
-    { name: "contact", label: "Contact" },
-    { name: "country", label: "Country" },
-  ];
+  { name: "company", label: "Company" },
+  { name: "contact", label: "Contact" },
+  {
+    name: "country",
+    label: "Country",
+    render: (row) => {
+      const Flag = countryFlags[row.country];
 
+      return (
+        <div className="flex items-center gap-2">
+          {Flag && (
+            <Flag
+              title={row.country}
+              className="h-5 w-8"
+            />
+          )}
+          <span>{row.country}</span>
+        </div>
+      );
+    },
+  },
+];
   const dispatch = useDispatch();
 
   const data = useSelector(selectCompanyData);

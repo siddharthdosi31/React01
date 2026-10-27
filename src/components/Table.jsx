@@ -25,11 +25,10 @@ function Table({ headers, data }) {
               className="odd:bg-gray-200 even:bg-white"
             >
               {headers.map((header) => (
-                <td
-                  key={header.name}
-                  className="border border-white px-3 py-2"
-                >
-                  {row[header.name]}
+                <td key={header.name} className="px-3 py-2">
+                  {header.render
+                    ? header.render(row)
+                    : row[header.name]}
                 </td>
               ))}
             </tr>
@@ -46,6 +45,7 @@ Table.propTypes = {
     PropTypes.shape({
       name: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
+      render: PropTypes.func,
     }).isRequired
   ).isRequired,
 
