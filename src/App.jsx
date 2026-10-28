@@ -1,3 +1,4 @@
+
 import {
   DE,
   MX,
@@ -5,10 +6,12 @@ import {
   GB,
   CA,
   IT,
-} from "../node_modules/country-flag-icons/react/3x2";
+} from "country-flag-icons/react/3x2";
+
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Table from "./components/Table";
+
 import {
   fetchCompanies,
   selectCompanyData,
@@ -16,71 +19,63 @@ import {
 
 function App() {
   const countryFlags = {
-  Germany: DE,
-  Mexico: MX,
-  Austria: AT,
-  UK: GB,
-  Canada: CA,
-  Italy: IT,
-};
-  const headers = [
-  {
-    name: "company",
-    label: "Company",
-    sortable: true,
-  },
-  {
-    name: "contact",
-    label: "Contact",
-    sortable: true,
-  },
-  {
-    name: "country",
-    label: "Country",
-    sortable: true,
-    render: (row) => {
-      const Flag = countryFlags[row.country];
+    Germany: DE,
+    Mexico: MX,
+    Austria: AT,
+    UK: GB,
+    Canada: CA,
+    Italy: IT,
+  };
 
-      return (
-        <div className="flex items-center gap-2">
-          {Flag && (
-            <Flag
-              title={row.country}
-              className="h-5 w-8"
-            />
-          )}
-          <span>{row.country}</span>
-        </div>
-      );
+  const headers = [
+    {
+      name: "company",
+      label: "Company",
+      sortable: true,
     },
-  },
-];
+    {
+      name: "contact",
+      label: "Contact",
+      sortable: true,
+    },
+    {
+      name: "country",
+      label: "Country",
+      render: (row) => {
+        const Flag = countryFlags[row.country];
+
+        return (
+          <div className="flex items-center gap-2">
+            {Flag && (
+              <Flag
+                title={row.country}
+                className="h-5 w-8"
+              />
+            )}
+            <span>{row.country}</span>
+          </div>
+        );
+      },
+    },
+  ];
+
   const dispatch = useDispatch();
 
   const data = useSelector(selectCompanyData);
-  const loading = useSelector((state) => state.companies.loading);
-  const error = useSelector((state) => state.companies.error);
+  const loading = useSelector(
+    (state) => state.companies.loading
+  );
+  const error = useSelector(
+    (state) => state.companies.error
+  );
 
-  // Search and sorting state
   const [searchText, setSearchText] = useState("");
-  const [sortColumn, setSortColumn] = useState("company");
-  const [sortDirection, setSortDirection] = useState("desc");
-
-  function handleSort(columnName) {
-    if (columnName === sortColumn) {
-      setSortDirection((direction) => direction === "asc" ? "desc" : "asc");
-      return;
-    }
-
-    setSortColumn(columnName);
-    setSortDirection("desc");
-  }
 
   useEffect(() => {
     dispatch(fetchCompanies());
   }, [dispatch]);
 
-  // 1. Filter rows by searching every column
+  // Filter rows by searching every column.
   const filteredData = data.filter((row) =>
     headers.some((header) =>
       String(row[header.name] ?? "")
@@ -88,18 +83,6 @@ function App() {
         .includes(searchText.trim().toLowerCase())
     )
   );
-
-  // 2. Sort the filtered rows by the selected column
-  const sortedData = [...filteredData].sort((a, b) => {
-    const valueA = String(a[sortColumn] ?? "");
-    const valueB = String(b[sortColumn] ?? "");
-
-    const comparison = valueA.localeCompare(valueB, undefined, {
-      sensitivity: "base",
-    });
-
-    return sortDirection === "asc" ? comparison : -comparison;
-  });
 
   return (
     <main className="min-h-screen bg-gray-100 p-6 font-sans">
@@ -109,41 +92,40 @@ function App() {
         </h1>
 
         <div className="mb-4">
-          <div>
-            <label
-              htmlFor="table-search"
-              className="mb-1 block text-sm font-medium text-gray-700"
-            >
-              Filter
-            </label>
+          <label
+            htmlFor="table-search"
+            className="mb-1 block text-sm font-medium text-gray-700"
+          >
+            Filter
+          </label>
 
-            <input
-              id="table-search"
-              type="text"
-              placeholder="Search any column..."
-              value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            />
-          </div>
+          <input
+            id="table-search"
+            type="text"
+            placeholder="Search any column..."
+            value={searchText}
+            onChange={(event) =>
+              setSearchText(event.target.value)
+            }
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          />
         </div>
 
         {loading ? (
           <p>Loading...</p>
         ) : error ? (
-          <p className="text-red-600">Error: {error}</p>
+          <p className="text-red-600">
+            Error: {error}
+          </p>
         ) : (
           <>
             <p className="mb-2 text-sm text-gray-600">
-              Showing {sortedData.length} of {data.length} companies
+              Showing {filteredData.length} of {data.length} companies
             </p>
 
             <Table
               headers={headers}
-              data={sortedData}
-              sortColumn={sortColumn}
-              sortDirection={sortDirection}
-              onSort={handleSort}
+              data={filteredData}
             />
           </>
         )}

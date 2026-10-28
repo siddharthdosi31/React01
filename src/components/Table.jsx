@@ -1,14 +1,65 @@
 
 import PropTypes from "prop-types";
+import { useState } from "react";
 
-function Table({ headers, data, sortColumn, sortDirection, onSort }) {
+function Table({ headers, data }) {
+  // null means no sorting is active initially.
+  const [sortConfig, setSortConfig] = useState(null);
+
+  function handleSort(columnName) {
+    setSortConfig((current) => {
+      // First click, or selecting another column:
+      // sort in descending order.
+      if (!current || current.column !== columnName) {
+        return {
+          column: columnName,
+          direction: "desc",
+        };
+      }
+
+      // Second click: switch to ascending.
+      if (current.direction === "desc") {
+        return {
+          column: columnName,
+          direction: "asc",
+        };
+      }
+
+      // Third click: clear sorting.
+      return null;
+    });
+  }
+
+  // Sort a copy of the data so the original array is not mutated.
+  const sortedData = sortConfig
+    ? [...data].sort((a, b) => {
+        const valueA = String(
+          a[sortConfig.column] ?? ""
+        );
+        const valueB = String(
+          b[sortConfig.column] ?? ""
+        );
+
+        const comparison = valueA.localeCompare(
+          valueB,
+          undefined,
+          { sensitivity: "base" }
+        );
+
+        return sortConfig.direction === "asc"
+          ? comparison
+          : -comparison;
+      })
+    : data;
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-left font-sans text-sm text-gray-800">
         <thead className="bg-white">
           <tr>
             {headers.map((header) => {
-              const isActive = sortColumn === header.name;
+              const isActive =
+                sortConfig?.column === header.name;
 
               return (
                 <th
@@ -21,22 +72,30 @@ function Table({ headers, data, sortColumn, sortDirection, onSort }) {
                     {header.sortable && (
                       <button
                         type="button"
-                        onClick={() => onSort(header.name)}
-                        aria-label={`Sort ${header.label}`}
+                        onClick={() => handleSort(header.name)}
+                        aria-label={
+                          !isActive
+                            ? `Sort ${header.label} descending`
+                            : sortConfig.direction === "desc"
+                              ? `Sort ${header.label} ascending`
+                              : `Remove sorting from ${header.label}`
+                        }
                         title={
                           !isActive
                             ? "Sort descending"
-                            : sortDirection === "desc"
+                            : sortConfig.direction === "desc"
                               ? "Sort ascending"
-                              : "Sort descending"
+                              : "Remove sorting"
                         }
-                        className={`rounded p-1 hover:bg-gray-200 ${isActive
+                        className={`rounded p-1 hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-blue-500 ${
+                          isActive
                             ? "opacity-100"
-                            : "opacity-0 group-hover:opacity-100"
-                          }`}
+                            : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+                        }`}
                       >
-                        {isActive && sortDirection === "asc" ? (
-                          // Up arrow SVG
+                        {isActive &&
+                        sortConfig.direction === "asc" ? (
+                          // SVG up arrow for ascending.
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -51,7 +110,7 @@ function Table({ headers, data, sortColumn, sortDirection, onSort }) {
                             <path d="m6 14 6-6 6 6" />
                           </svg>
                         ) : (
-                          // Down arrow SVG
+                          // SVG down arrow for hover or descending.
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -76,13 +135,16 @@ function Table({ headers, data, sortColumn, sortDirection, onSort }) {
         </thead>
 
         <tbody>
-          {data.map((row, rowIndex) => (
+          {sortedData.map((row, rowIndex) => (
             <tr
-              key={rowIndex}
+              key={row.id ?? rowIndex}
               className="odd:bg-gray-200 even:bg-white"
             >
               {headers.map((header) => (
-                <td key={header.name} className="px-3 py-2">
+                <td
+                  key={header.name}
+                  className="px-3 py-2"
+                >
                   {header.render
                     ? header.render(row)
                     : row[header.name]}
@@ -96,7 +158,7 @@ function Table({ headers, data, sortColumn, sortDirection, onSort }) {
   );
 }
 
-// Validate the props received by Table
+// Validate the props received by Table.
 Table.propTypes = {
   headers: PropTypes.arrayOf(
     PropTypes.shape({
@@ -110,9 +172,6 @@ Table.propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.object.isRequired
   ).isRequired,
-  sortColumn: PropTypes.string.isRequired,
-  sortDirection: PropTypes.oneOf(["asc", "desc"]).isRequired,
-  onSort: PropTypes.func.isRequired,
 };
 
 export default Table;
