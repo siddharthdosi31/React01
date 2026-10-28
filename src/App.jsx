@@ -12,6 +12,12 @@ import {
   IN,
   AU,
   FR,
+  BR,
+  IT,
+  DE,
+  KR,
+  AE,
+  ES
 } from "country-flag-icons/react/3x2";
 
 import { useEffect, useState } from "react";
@@ -25,19 +31,46 @@ import {
 
 function App() {
   const countryFlags = {
-  USA: US,
-  GBR: GB,
-  CAN: CA,
-  IRL: IE,
-  JPN: JP,
-  SGP: SG,
-  CHN: CN,
-  SWE: SE,
-  NLD: NL,
-  IND: IN,
-  AUS: AU,
-  FRA: FR,
-};
+    USA: US,
+    GBR: GB,
+    CAN: CA,
+    IRL: IE,
+    JPN: JP,
+    SGP: SG,
+    CHN: CN,
+    SWE: SE,
+    NLD: NL,
+    IND: IN,
+    AUS: AU,
+    FRA: FR,
+    BRA: BR,
+    ITA: IT,
+    DEU: DE,
+    KOR: KR,
+    ARE: AE,
+    ESP:ES
+  };
+
+  const countryNames = {
+    USA: "United States",
+    GBR: "United Kingdom",
+    CAN: "Canada",
+    IRL: "Ireland",
+    JPN: "Japan",
+    SGP: "Singapore",
+    CHN: "China",
+    SWE: "Sweden",
+    NLD: "Netherlands",
+    IND: "India",
+    AUS: "Australia",
+    FRA: "France",
+    BRA: "Brazil",
+    ITA: "Italy",
+    DEU: "Germany",
+    KOR: "South Korea",
+    ARE: "United Arab Emirates",
+    ESP: "Spain"
+  };
 
   const headers = [
     {
@@ -54,17 +87,19 @@ function App() {
       name: "country",
       label: "Country",
       render: (row) => {
-        const Flag = countryFlags[row.country];
+        const countryCode = String(row.country ?? "").toUpperCase();
+        const Flag = countryFlags[countryCode];
+        const countryName = countryNames[countryCode] ?? row.country;
 
         return (
           <div className="flex items-center gap-2">
             {Flag && (
               <Flag
-                title={row.country}
+                title={countryName}
                 className="h-5 w-8"
               />
             )}
-            <span>{row.country}</span>
+            <span>{countryName}</span>
           </div>
         );
       },

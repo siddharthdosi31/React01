@@ -13,15 +13,15 @@ function Table({ headers, data }) {
       if (!current || current.column !== columnName) {
         return {
           column: columnName,
-          direction: "desc",
+          direction: "asc",
         };
       }
 
       // Second click: switch to ascending.
-      if (current.direction === "desc") {
+      if (current.direction === "asc") {
         return {
           column: columnName,
-          direction: "asc",
+          direction: "desc",
         };
       }
 
