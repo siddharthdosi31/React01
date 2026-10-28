@@ -24,11 +24,20 @@ function App() {
   Italy: IT,
 };
   const headers = [
-  { name: "company", label: "Company" },
-  { name: "contact", label: "Contact" },
+  {
+    name: "company",
+    label: "Company",
+    sortable: true,
+  },
+  {
+    name: "contact",
+    label: "Contact",
+    sortable: true,
+  },
   {
     name: "country",
     label: "Country",
+    sortable: true,
     render: (row) => {
       const Flag = countryFlags[row.country];
 
@@ -56,6 +65,16 @@ function App() {
   const [searchText, setSearchText] = useState("");
   const [sortColumn, setSortColumn] = useState("company");
   const [sortDirection, setSortDirection] = useState("desc");
+
+  function handleSort(columnName) {
+    if (columnName === sortColumn) {
+      setSortDirection((direction) => direction === "asc" ? "desc" : "asc");
+      return;
+    }
+
+    setSortColumn(columnName);
+    setSortDirection("desc");
+  }
 
   useEffect(() => {
     dispatch(fetchCompanies());
@@ -89,9 +108,8 @@ function App() {
           Company Directory
         </h1>
 
-        {/* Search and sorting controls */}
-        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end">
-          <div className="flex-1">
+        <div className="mb-4">
+          <div>
             <label
               htmlFor="table-search"
               className="mb-1 block text-sm font-medium text-gray-700"
@@ -108,47 +126,6 @@ function App() {
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
           </div>
-
-          <div>
-            <label
-              htmlFor="sort-column"
-              className="mb-1 block text-sm font-medium text-gray-700"
-            >
-              Sort by
-            </label>
-
-            <select
-              id="sort-column"
-              value={sortColumn}
-              onChange={(event) => setSortColumn(event.target.value)}
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm sm:w-40"
-            >
-              {headers.map((header) => (
-                <option key={header.name} value={header.name}>
-                  {header.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label
-              htmlFor="sort-direction"
-              className="mb-1 block text-sm font-medium text-gray-700"
-            >
-              Order
-            </label>
-
-            <select
-              id="sort-direction"
-              value={sortDirection}
-              onChange={(event) => setSortDirection(event.target.value)}
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm sm:w-40"
-            >
-              <option value="asc">Ascending (A–Z)</option>
-              <option value="desc">Descending (Z–A)</option>
-            </select>
-          </div>
         </div>
 
         {loading ? (
@@ -161,7 +138,13 @@ function App() {
               Showing {sortedData.length} of {data.length} companies
             </p>
 
-            <Table headers={headers} data={sortedData} />
+            <Table
+              headers={headers}
+              data={sortedData}
+              sortColumn={sortColumn}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+            />
           </>
         )}
       </div>
