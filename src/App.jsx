@@ -1,11 +1,17 @@
 
 import {
-  DE,
-  MX,
-  AT,
+  US,
   GB,
   CA,
-  IT,
+  IE,
+  JP,
+  SG,
+  CN,
+  SE,
+  NL,
+  IN,
+  AU,
+  FR,
 } from "country-flag-icons/react/3x2";
 
 import { useEffect, useState } from "react";
@@ -19,13 +25,19 @@ import {
 
 function App() {
   const countryFlags = {
-    Germany: DE,
-    Mexico: MX,
-    Austria: AT,
-    UK: GB,
-    Canada: CA,
-    Italy: IT,
-  };
+  USA: US,
+  GBR: GB,
+  CAN: CA,
+  IRL: IE,
+  JPN: JP,
+  SGP: SG,
+  CHN: CN,
+  SWE: SE,
+  NLD: NL,
+  IND: IN,
+  AUS: AU,
+  FRA: FR,
+};
 
   const headers = [
     {

@@ -5,32 +5,35 @@ import {
   createSelector,
 } from "@reduxjs/toolkit";
 
-// 1. Create an async thunk to fetch company data
+// Fetch company data from your Node.js API.
 export const fetchCompanies = createAsyncThunk(
   "companies/fetchCompanies",
   async () => {
-    const response = await fetch("/data.json");
+    const response = await fetch("http://localhost:8080/api");
 
     if (!response.ok) {
-      throw new Error("Failed to fetch company data");
+      throw new Error("Failed to fetch companies");
     }
 
-    return await response.json();
+    const result = await response.json();
+
+    return result.rows;
   }
 );
 
-// 2. Define the initial Redux state
+// Initial Redux state.
 const initialState = {
   data: [],
   loading: false,
   error: null,
 };
 
-// 3. Create a slice
+// Create the companies slice.
 const companySlice = createSlice({
   name: "companies",
   initialState,
   reducers: {},
+
   extraReducers: (builder) => {
     builder
       .addCase(fetchCompanies.pending, (state) => {
@@ -43,12 +46,13 @@ const companySlice = createSlice({
       })
       .addCase(fetchCompanies.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Something went wrong";
+        state.error =
+          action.error.message || "Something went wrong";
       });
   },
 });
 
-// 4. Select the company data using createSelector
+// Select company data from the Redux store.
 const selectCompanyState = (state) => state.companies;
 
 export const selectCompanyData = createSelector(
@@ -56,4 +60,5 @@ export const selectCompanyData = createSelector(
   (companies) => companies.data
 );
 
+// Default export required by store.js.
 export default companySlice.reducer;
