@@ -86,6 +86,7 @@ function App() {
     {
       name: "country",
       label: "Country",
+      sortable: true,
       render: (row) => {
         const countryCode = String(row.country ?? "").toUpperCase();
         const Flag = countryFlags[countryCode];
@@ -109,6 +110,7 @@ function App() {
   const dispatch = useDispatch();
 
   const data = useSelector(selectCompanyData);
+  const total = useSelector((state) => state.companies.total);
   const loading = useSelector(
     (state) => state.companies.loading
   );
@@ -117,19 +119,11 @@ function App() {
   );
 
   const [searchText, setSearchText] = useState("");
+  const [sortConfig, setSortConfig] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchCompanies());
-  }, [dispatch]);
-
-  // Filter rows by searching every column.
-  const filteredData = data.filter((row) =>
-    headers.some((header) =>
-      String(row[header.name] ?? "")
-        .toLowerCase()
-        .includes(searchText.trim().toLowerCase())
-    )
-  );
+    dispatch(fetchCompanies({ filter: searchText, sortConfig }));
+  }, [dispatch, searchText, sortConfig]);
 
   return (
     <main className="min-h-screen bg-gray-100 p-6 font-sans">
@@ -149,7 +143,7 @@ function App() {
           <input
             id="table-search"
             type="text"
-            placeholder="Search any column..."
+            placeholder="Search company or contact..."
             value={searchText}
             onChange={(event) =>
               setSearchText(event.target.value)
@@ -167,12 +161,14 @@ function App() {
         ) : (
           <>
             <p className="mb-2 text-sm text-gray-600">
-              Showing {filteredData.length} of {data.length} companies
+              Showing {data.length} of {total} companies
             </p>
 
             <Table
               headers={headers}
-              data={filteredData}
+              data={data}
+              sortConfig={sortConfig}
+              onSortChange={setSortConfig}
             />
           </>
         )}

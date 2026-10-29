@@ -1,56 +1,16 @@
 
 import PropTypes from "prop-types";
-import { useState } from "react";
 
-function Table({ headers, data }) {
-  // null means no sorting is active initially.
-  const [sortConfig, setSortConfig] = useState(null);
-
+function Table({ headers, data, sortConfig, onSortChange }) {
   function handleSort(columnName) {
-    setSortConfig((current) => {
-      // First click, or selecting another column:
-      // sort in descending order.
-      if (!current || current.column !== columnName) {
-        return {
-          column: columnName,
-          direction: "asc",
-        };
-      }
-
-      // Second click: switch to ascending.
-      if (current.direction === "asc") {
-        return {
-          column: columnName,
-          direction: "desc",
-        };
-      }
-
-      // Third click: clear sorting.
-      return null;
-    });
+    if (!sortConfig || sortConfig.column !== columnName) {
+      onSortChange({ column: columnName, direction: "asc" });
+    } else if (sortConfig.direction === "asc") {
+      onSortChange({ column: columnName, direction: "desc" });
+    } else {
+      onSortChange(null);
+    }
   }
-
-  // Sort a copy of the data so the original array is not mutated.
-  const sortedData = sortConfig
-    ? [...data].sort((a, b) => {
-        const valueA = String(
-          a[sortConfig.column] ?? ""
-        );
-        const valueB = String(
-          b[sortConfig.column] ?? ""
-        );
-
-        const comparison = valueA.localeCompare(
-          valueB,
-          undefined,
-          { sensitivity: "base" }
-        );
-
-        return sortConfig.direction === "asc"
-          ? comparison
-          : -comparison;
-      })
-    : data;
 
   return (
     <div className="overflow-x-auto">
@@ -75,16 +35,16 @@ function Table({ headers, data }) {
                         onClick={() => handleSort(header.name)}
                         aria-label={
                           !isActive
-                            ? `Sort ${header.label} descending`
-                            : sortConfig.direction === "desc"
-                              ? `Sort ${header.label} ascending`
+                            ? `Sort ${header.label} ascending`
+                            : sortConfig.direction === "asc"
+                              ? `Sort ${header.label} descending`
                               : `Remove sorting from ${header.label}`
                         }
                         title={
                           !isActive
-                            ? "Sort descending"
-                            : sortConfig.direction === "desc"
-                              ? "Sort ascending"
+                            ? "Sort ascending"
+                            : sortConfig.direction === "asc"
+                              ? "Sort descending"
                               : "Remove sorting"
                         }
                         className={`rounded p-1 hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-blue-500 ${
@@ -135,7 +95,7 @@ function Table({ headers, data }) {
         </thead>
 
         <tbody>
-          {sortedData.map((row, rowIndex) => (
+          {data.map((row, rowIndex) => (
             <tr
               key={row.id ?? rowIndex}
               className="odd:bg-gray-200 even:bg-white"
@@ -172,6 +132,11 @@ Table.propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.object.isRequired
   ).isRequired,
+  sortConfig: PropTypes.shape({
+    column: PropTypes.string.isRequired,
+    direction: PropTypes.oneOf(["asc", "desc"]).isRequired,
+  }),
+  onSortChange: PropTypes.func.isRequired,
 };
 
 export default Table;
