@@ -9,19 +9,24 @@ import {
 
 export const fetchCompanies = createAsyncThunk(
   "companies/fetchCompanies",
-  async ({ filter = "", sortConfig = null } = {}) => {
+  async ({
+    filter = "",
+    sortConfig = null,
+    page = 1,
+    limit = 100,
+    append = false,
+  } = {}) => {
     const params = new URLSearchParams();
 
     params.set("filter", filter.trim());
+    params.set("page", String(page));
+    params.set("limit", String(limit));
 
     if (sortConfig) {
       params.set("sortCol", sortConfig.column);
       params.set("sortKey", sortConfig.direction);
     }
 
-    // Explicitly request all records up to the chosen limit.
-    params.set("page", "1");
-    
     const response = await fetch(
       `http://localhost:8080/api?${params.toString()}`
     );
@@ -30,10 +35,15 @@ export const fetchCompanies = createAsyncThunk(
       throw new Error("Failed to fetch companies");
     }
 
-    return await response.json();
+    const result = await response.json();
+
+    // Return append along with the API response.
+    return {
+      ...result,
+      append,
+    };
   }
 );
-
 
 // Initial Redux state.
 const initialState = {
@@ -64,7 +74,14 @@ const companySlice = createSlice({
 
         state.loading = false;
         state.currentRequestId = null;
-        state.data = action.payload.rows;
+
+        // Append rows when loading the next page.
+        if (action.payload.append) {
+          state.data.push(...action.payload.rows);
+        } else {
+          state.data = action.payload.rows;
+        }
+
         state.total = action.payload.total;
       })
       .addCase(fetchCompanies.rejected, (state, action) => {

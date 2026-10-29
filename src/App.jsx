@@ -17,10 +17,10 @@ import {
   DE,
   KR,
   AE,
-  ES
+  ES,
 } from "country-flag-icons/react/3x2";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Table from "./components/Table";
 
@@ -48,7 +48,7 @@ function App() {
     DEU: DE,
     KOR: KR,
     ARE: AE,
-    ESP:ES
+    ESP: ES,
   };
 
   const countryNames = {
@@ -69,7 +69,7 @@ function App() {
     DEU: "Germany",
     KOR: "South Korea",
     ARE: "United Arab Emirates",
-    ESP: "Spain"
+    ESP: "Spain",
   };
 
   const headers = [
@@ -88,9 +88,13 @@ function App() {
       label: "Country",
       sortable: true,
       render: (row) => {
-        const countryCode = String(row.country ?? "").toUpperCase();
+        const countryCode = String(
+          row.country ?? ""
+        ).toUpperCase();
+
         const Flag = countryFlags[countryCode];
-        const countryName = countryNames[countryCode] ?? row.country;
+        const countryName =
+          countryNames[countryCode] ?? row.country;
 
         return (
           <div className="flex items-center gap-2">
@@ -110,7 +114,9 @@ function App() {
   const dispatch = useDispatch();
 
   const data = useSelector(selectCompanyData);
-  const total = useSelector((state) => state.companies.total);
+  const total = useSelector(
+    (state) => state.companies.total
+  );
   const loading = useSelector(
     (state) => state.companies.loading
   );
@@ -120,10 +126,61 @@ function App() {
 
   const [searchText, setSearchText] = useState("");
   const [sortConfig, setSortConfig] = useState(null);
+  const [page, setPage] = useState(1);
 
+  const bottomRef = useRef(null);
+  const limit = 100;
+
+  const hasMore = data.length < total;
+
+  // Fetch the current page from the server.
   useEffect(() => {
-    dispatch(fetchCompanies({ filter: searchText, sortConfig }));
-  }, [dispatch, searchText, sortConfig]);
+    dispatch(
+      fetchCompanies({
+        filter: searchText,
+        sortConfig,
+        page,
+        limit,
+        append: page > 1,
+      })
+    );
+  }, [dispatch, searchText, sortConfig, page]);
+
+  // Observe the marker at the bottom of the table.
+  useEffect(() => {
+    const target = bottomRef.current;
+
+    if (!target || loading || !hasMore || error) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setPage((currentPage) => currentPage + 1);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "200px",
+        threshold: 0,
+      }
+    );
+
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [loading, hasMore, error]);
+
+  function handleSearchChange(event) {
+    setPage(1);
+    setSearchText(event.target.value);
+  }
+
+  function handleSortChange(nextSortConfig) {
+    setPage(1);
+    setSortConfig(nextSortConfig);
+  }
 
   return (
     <main className="min-h-screen bg-gray-100 p-6 font-sans">
@@ -145,16 +202,12 @@ function App() {
             type="text"
             placeholder="Search company or contact..."
             value={searchText}
-            onChange={(event) =>
-              setSearchText(event.target.value)
-            }
+            onChange={handleSearchChange}
             className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
           />
         </div>
 
-        {loading ? (
-          <p>Loading...</p>
-        ) : error ? (
+        {error && data.length === 0 ? (
           <p className="text-red-600">
             Error: {error}
           </p>
@@ -164,12 +217,52 @@ function App() {
               Showing {data.length} of {total} companies
             </p>
 
-            <Table
-              headers={headers}
-              data={data}
-              sortConfig={sortConfig}
-              onSortChange={setSortConfig}
-            />
+            {data.length > 0 && (
+              <Table
+                headers={headers}
+                data={data}
+                sortConfig={sortConfig}
+                onSortChange={handleSortChange}
+              />
+            )}
+
+            {loading && data.length === 0 && (
+              <p className="py-4 text-center text-gray-600">
+                Loading companies...
+              </p>
+            )}
+
+            {error && (
+              <p className="py-3 text-red-600">
+                Error: {error}
+              </p>
+            )}
+
+            {hasMore && (
+              <div
+                ref={bottomRef}
+                className="h-5"
+                aria-hidden="true"
+              />
+            )}
+
+            {loading && data.length > 0 && (
+              <p className="py-4 text-center text-gray-600">
+                Loading more companies...
+              </p>
+            )}
+
+            {!loading && !hasMore && data.length > 0 && (
+              <p className="py-4 text-center text-gray-500">
+                You've reached the end of the table.
+              </p>
+            )}
+
+            {!loading && data.length === 0 && !error && (
+              <p className="py-4 text-center text-gray-500">
+                No companies found.
+              </p>
+            )}
           </>
         )}
       </div>
