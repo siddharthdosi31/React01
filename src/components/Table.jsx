@@ -4,9 +4,15 @@ import PropTypes from "prop-types";
 function Table({ headers, data, sortConfig, onSortChange }) {
   function handleSort(columnName) {
     if (!sortConfig || sortConfig.column !== columnName) {
-      onSortChange({ column: columnName, direction: "asc" });
+      onSortChange({
+        column: columnName,
+        direction: "asc",
+      });
     } else if (sortConfig.direction === "asc") {
-      onSortChange({ column: columnName, direction: "desc" });
+      onSortChange({
+        column: columnName,
+        direction: "desc",
+      });
     } else {
       onSortChange(null);
     }
@@ -14,8 +20,8 @@ function Table({ headers, data, sortConfig, onSortChange }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left font-sans text-sm text-gray-800">
-        <thead className="bg-white">
+      <table className="w-full border-collapse text-left text-sm text-slate-700">
+        <thead className="bg-blue-50/80 text-slate-700">
           <tr>
             {headers.map((header) => {
               const isActive =
@@ -24,7 +30,8 @@ function Table({ headers, data, sortConfig, onSortChange }) {
               return (
                 <th
                   key={header.name}
-                  className="border border-white px-3 py-2 font-bold"
+                  scope="col"
+                  className="border-b border-slate-200 px-5 py-4 font-semibold"
                 >
                   <div className="group flex items-center gap-2">
                     <span>{header.label}</span>
@@ -47,15 +54,14 @@ function Table({ headers, data, sortConfig, onSortChange }) {
                               ? "Sort descending"
                               : "Remove sorting"
                         }
-                        className={`rounded p-1 hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-blue-500 ${
+                        className={`rounded-md p-1 transition hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-blue-500 ${
                           isActive
-                            ? "opacity-100"
-                            : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+                            ? "text-blue-600"
+                            : "text-slate-400 opacity-60 group-hover:opacity-100 group-focus-within:opacity-100"
                         }`}
                       >
                         {isActive &&
                         sortConfig.direction === "asc" ? (
-                          // SVG up arrow for ascending.
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -70,7 +76,6 @@ function Table({ headers, data, sortConfig, onSortChange }) {
                             <path d="m6 14 6-6 6 6" />
                           </svg>
                         ) : (
-                          // SVG down arrow for hover or descending.
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -98,12 +103,12 @@ function Table({ headers, data, sortConfig, onSortChange }) {
           {data.map((row, rowIndex) => (
             <tr
               key={row.id ?? rowIndex}
-              className="odd:bg-gray-200 even:bg-white"
+              className="border-b border-slate-100 transition-colors odd:bg-white even:bg-slate-50/70 hover:bg-blue-50/70"
             >
               {headers.map((header) => (
                 <td
                   key={header.name}
-                  className="px-3 py-2"
+                  className="px-5 py-4"
                 >
                   {header.render
                     ? header.render(row)
@@ -118,7 +123,6 @@ function Table({ headers, data, sortConfig, onSortChange }) {
   );
 }
 
-// Validate the props received by Table.
 Table.propTypes = {
   headers: PropTypes.arrayOf(
     PropTypes.shape({
@@ -132,10 +136,12 @@ Table.propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.object.isRequired
   ).isRequired,
+
   sortConfig: PropTypes.shape({
     column: PropTypes.string.isRequired,
     direction: PropTypes.oneOf(["asc", "desc"]).isRequired,
   }),
+
   onSortChange: PropTypes.func.isRequired,
 };
 

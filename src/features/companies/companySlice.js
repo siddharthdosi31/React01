@@ -13,8 +13,8 @@ export const fetchCompanies = createAsyncThunk(
     filter = "",
     sortConfig = null,
     page = 1,
-    limit = 100,
-    append = false,
+    limit = 10,
+    // append = false,
   } = {}) => {
     const params = new URLSearchParams();
 
@@ -35,13 +35,7 @@ export const fetchCompanies = createAsyncThunk(
       throw new Error("Failed to fetch companies");
     }
 
-    const result = await response.json();
-
-    // Return append along with the API response.
-    return {
-      ...result,
-      append,
-    };
+    return await response.json();
   }
 );
 
@@ -76,11 +70,7 @@ const companySlice = createSlice({
         state.currentRequestId = null;
 
         // Append rows when loading the next page.
-        if (action.payload.append) {
-          state.data.push(...action.payload.rows);
-        } else {
-          state.data = action.payload.rows;
-        }
+        state.data = action.payload.rows;
 
         state.total = action.payload.total;
       })
