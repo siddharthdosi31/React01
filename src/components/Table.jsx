@@ -1,7 +1,12 @@
 
 import PropTypes from "prop-types";
 
-function Table({ headers, data, sortConfig, onSortChange }) {
+function Table({ headers,
+  data,
+  sortConfig,
+  onSortChange,
+  bottomRef,
+}) {
   function handleSort(columnName) {
     if (!sortConfig || sortConfig.column !== columnName) {
       onSortChange({ column: columnName, direction: "asc" });
@@ -47,14 +52,13 @@ function Table({ headers, data, sortConfig, onSortChange }) {
                               ? "Sort descending"
                               : "Remove sorting"
                         }
-                        className={`rounded p-1 hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-blue-500 ${
-                          isActive
+                        className={`rounded p-1 hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-blue-500 ${isActive
                             ? "opacity-100"
                             : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
-                        }`}
+                          }`}
                       >
                         {isActive &&
-                        sortConfig.direction === "asc" ? (
+                          sortConfig.direction === "asc" ? (
                           // SVG up arrow for ascending.
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -114,6 +118,11 @@ function Table({ headers, data, sortConfig, onSortChange }) {
           ))}
         </tbody>
       </table>
+      <div
+        ref={bottomRef}
+        className="h-5"
+        aria-hidden="true"
+      />
     </div>
   );
 }
@@ -137,6 +146,9 @@ Table.propTypes = {
     direction: PropTypes.oneOf(["asc", "desc"]).isRequired,
   }),
   onSortChange: PropTypes.func.isRequired,
+  bottomRef: PropTypes.shape({
+  current: PropTypes.instanceOf(Element),
+}),
 };
 
 export default Table;

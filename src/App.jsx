@@ -19,8 +19,8 @@ import {
   AE,
   ES,
 } from "country-flag-icons/react/3x2";
-
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import useInfiniteScroll from "./hooks/useInfiniteScroll";
 import { useDispatch, useSelector } from "react-redux";
 import Table from "./components/Table";
 
@@ -128,7 +128,7 @@ function App() {
   const [sortConfig, setSortConfig] = useState(null);
   const [page, setPage] = useState(1);
 
-  const bottomRef = useRef(null);
+
   const limit = 100;
 
   const hasMore = data.length < total;
@@ -146,31 +146,20 @@ function App() {
     );
   }, [dispatch, searchText, sortConfig, page]);
 
-  // Observe the marker at the bottom of the table.
-  useEffect(() => {
-    const target = bottomRef.current;
-
-    if (!target || loading || !hasMore || error) {
-      return;
+  const handleLoadMore = () => {
+    if (!loading && hasMore && !error) {
+      setPage((currentPage) => currentPage + 1);
     }
+  };
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setPage((currentPage) => currentPage + 1);
-        }
-      },
-      {
-        root: null,
-        rootMargin: "200px",
-        threshold: 0,
-      }
-    );
-
-    observer.observe(target);
-
-    return () => observer.disconnect();
-  }, [loading, hasMore, error]);
+  const bottomRef = useInfiniteScroll({
+    loading,
+    hasMore,
+    error,
+    onLoadMore: handleLoadMore,
+  });
+  // Observe the marker at the bottom of the table.
+  
 
   function handleSearchChange(event) {
     setPage(1);
@@ -223,6 +212,7 @@ function App() {
                 data={data}
                 sortConfig={sortConfig}
                 onSortChange={handleSortChange}
+                bottomRef={bottomRef}
               />
             )}
 
@@ -238,13 +228,7 @@ function App() {
               </p>
             )}
 
-            {hasMore && (
-              <div
-                ref={bottomRef}
-                className="h-5"
-                aria-hidden="true"
-              />
-            )}
+            
 
             {loading && data.length > 0 && (
               <p className="py-4 text-center text-gray-600">
