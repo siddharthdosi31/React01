@@ -1,256 +1,63 @@
 
 import {
-  US,
-  GB,
-  CA,
-  IE,
-  JP,
-  SG,
-  CN,
-  SE,
-  NL,
-  IN,
-  AU,
-  FR,
-  BR,
-  IT,
-  DE,
-  KR,
-  AE,
-  ES,
-} from "country-flag-icons/react/3x2";
-import { useEffect, useState } from "react";
-import useInfiniteScroll from "./hooks/useInfiniteScroll";
-import { useDispatch, useSelector } from "react-redux";
-import Table from "./components/Table";
+  Routes,
+  Route,
+  Link,
+  Outlet,
+} from "react-router";
 
-import {
-  fetchCompanies,
-  selectCompanyData,
-} from "./features/companies/companySlice";
+import Home from "./pages/Home";
+import AddCompany from "./pages/addCompany";
+
+// Shared navigation layout
+function Layout() {
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <nav className="border-b bg-white px-6 py-4 shadow-sm">
+        <div className="mx-auto flex max-w-5xl items-center justify-between">
+          <Link
+            to="/"
+            className="text-xl font-bold text-gray-900"
+          >
+            Company Directory
+          </Link>
+
+          <div className="flex items-center gap-5">
+            <Link
+              to="/"
+              className="text-sm font-medium text-gray-700 hover:text-blue-600"
+            >
+              Home
+            </Link>
+
+            <Link
+              to="/add-company"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              + Add Company
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* The selected page renders here */}
+      <Outlet />
+    </div>
+  );
+}
 
 function App() {
-  const countryFlags = {
-    USA: US,
-    GBR: GB,
-    CAN: CA,
-    IRL: IE,
-    JPN: JP,
-    SGP: SG,
-    CHN: CN,
-    SWE: SE,
-    NLD: NL,
-    IND: IN,
-    AUS: AU,
-    FRA: FR,
-    BRA: BR,
-    ITA: IT,
-    DEU: DE,
-    KOR: KR,
-    ARE: AE,
-    ESP: ES,
-  };
-
-  const countryNames = {
-    USA: "United States",
-    GBR: "United Kingdom",
-    CAN: "Canada",
-    IRL: "Ireland",
-    JPN: "Japan",
-    SGP: "Singapore",
-    CHN: "China",
-    SWE: "Sweden",
-    NLD: "Netherlands",
-    IND: "India",
-    AUS: "Australia",
-    FRA: "France",
-    BRA: "Brazil",
-    ITA: "Italy",
-    DEU: "Germany",
-    KOR: "South Korea",
-    ARE: "United Arab Emirates",
-    ESP: "Spain",
-  };
-
-  const headers = [
-    {
-      name: "company",
-      label: "Company",
-      sortable: true,
-    },
-    {
-      name: "contact",
-      label: "Contact",
-      sortable: true,
-    },
-    {
-      name: "country",
-      label: "Country",
-      sortable: true,
-      render: (row) => {
-        const countryCode = String(
-          row.country ?? ""
-        ).toUpperCase();
-
-        const Flag = countryFlags[countryCode];
-        const countryName =
-          countryNames[countryCode] ?? row.country;
-
-        return (
-          <div className="flex items-center gap-2">
-            {Flag && (
-              <Flag
-                title={countryName}
-                className="h-5 w-8"
-              />
-            )}
-            <span>{countryName}</span>
-          </div>
-        );
-      },
-    },
-  ];
-
-  const dispatch = useDispatch();
-
-  const data = useSelector(selectCompanyData);
-  const total = useSelector(
-    (state) => state.companies.total
-  );
-  const loading = useSelector(
-    (state) => state.companies.loading
-  );
-  const error = useSelector(
-    (state) => state.companies.error
-  );
-
-  const [searchText, setSearchText] = useState("");
-  const [sortConfig, setSortConfig] = useState(null);
-  const [page, setPage] = useState(1);
-
-
-  const limit = 100;
-
-  const hasMore = data.length < total;
-
-  // Fetch the current page from the server.
-  useEffect(() => {
-    dispatch(
-      fetchCompanies({
-        filter: searchText,
-        sortConfig,
-        page,
-        limit,
-        append: page > 1,
-      })
-    );
-  }, [dispatch, searchText, sortConfig, page]);
-
-  const handleLoadMore = () => {
-    if (!loading && hasMore && !error) {
-      setPage((currentPage) => currentPage + 1);
-    }
-  };
-
-  const bottomRef = useInfiniteScroll({
-    loading,
-    hasMore,
-    error,
-    onLoadMore: handleLoadMore,
-  });
-  // Observe the marker at the bottom of the table.
-  
-
-  function handleSearchChange(event) {
-    setPage(1);
-    setSearchText(event.target.value);
-  }
-
-  function handleSortChange(nextSortConfig) {
-    setPage(1);
-    setSortConfig(nextSortConfig);
-  }
-
   return (
-    <main className="min-h-screen bg-gray-100 p-6 font-sans">
-      <div className="mx-auto max-w-5xl">
-        <h1 className="mb-5 text-2xl font-bold text-gray-900">
-          Company Directory
-        </h1>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Home />} />
 
-        <div className="mb-4">
-          <label
-            htmlFor="table-search"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
-            Filter
-          </label>
-
-          <input
-            id="table-search"
-            type="text"
-            placeholder="Search company or contact..."
-            value={searchText}
-            onChange={handleSearchChange}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-          />
-        </div>
-
-        {error && data.length === 0 ? (
-          <p className="text-red-600">
-            Error: {error}
-          </p>
-        ) : (
-          <>
-            <p className="mb-2 text-sm text-gray-600">
-              Showing {data.length} of {total} companies
-            </p>
-
-            {data.length > 0 && (
-              <Table
-                headers={headers}
-                data={data}
-                sortConfig={sortConfig}
-                onSortChange={handleSortChange}
-                bottomRef={bottomRef}
-              />
-            )}
-
-            {loading && data.length === 0 && (
-              <p className="py-4 text-center text-gray-600">
-                Loading companies...
-              </p>
-            )}
-
-            {error && (
-              <p className="py-3 text-red-600">
-                Error: {error}
-              </p>
-            )}
-
-            
-
-            {loading && data.length > 0 && (
-              <p className="py-4 text-center text-gray-600">
-                Loading more companies...
-              </p>
-            )}
-
-            {!loading && !hasMore && data.length > 0 && (
-              <p className="py-4 text-center text-gray-500">
-                You've reached the end of the table.
-              </p>
-            )}
-
-            {!loading && data.length === 0 && !error && (
-              <p className="py-4 text-center text-gray-500">
-                No companies found.
-              </p>
-            )}
-          </>
-        )}
-      </div>
-    </main>
+        <Route
+          path="/add-company"
+          element={<AddCompany />}
+        />
+      </Route>
+    </Routes>
   );
 }
 
