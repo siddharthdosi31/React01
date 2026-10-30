@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import useInfiniteScroll from "./hooks/useInfiniteScroll";
 import { useDispatch, useSelector } from "react-redux";
 import Table from "./components/Table";
+import useDebounce from "./hooks/useDebouncing";
 
 import {
   fetchCompanies,
@@ -125,6 +126,7 @@ function App() {
   );
 
   const [searchText, setSearchText] = useState("");
+  const debouncedSearchText = useDebounce(searchText, 500);
   const [sortConfig, setSortConfig] = useState(null);
   const [page, setPage] = useState(1);
 
@@ -134,17 +136,32 @@ function App() {
   const hasMore = data.length < total;
 
   // Fetch the current page from the server.
+
   useEffect(() => {
+    // Wait until the debounce value catches up
+    // with the latest search input.
+    if (searchText !== debouncedSearchText) {
+      return;
+    }
+
     dispatch(
       fetchCompanies({
-        filter: searchText,
+        filter: debouncedSearchText,
         sortConfig,
         page,
         limit,
         append: page > 1,
       })
     );
-  }, [dispatch, searchText, sortConfig, page]);
+
+  }, [
+    dispatch,
+    searchText,
+    debouncedSearchText,
+    sortConfig,
+    page,
+  ]);
+
 
   const handleLoadMore = () => {
     if (!loading && hasMore && !error) {
@@ -159,7 +176,7 @@ function App() {
     onLoadMore: handleLoadMore,
   });
   // Observe the marker at the bottom of the table.
-  
+
 
   function handleSearchChange(event) {
     setPage(1);
@@ -228,7 +245,7 @@ function App() {
               </p>
             )}
 
-            
+
 
             {loading && data.length > 0 && (
               <p className="py-4 text-center text-gray-600">
