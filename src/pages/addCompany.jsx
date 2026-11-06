@@ -1,5 +1,13 @@
 
+import { useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+
 import useForm from "../hooks/useForm";
+
+import {
+  submitCompany,
+  clearSubmitStatus,
+} from "../features/companies/companySlice";
 
 // Define the form fields and their validation rules.
 const formStructure = [
@@ -76,6 +84,19 @@ const countries = [
 ];
 
 function AddCompany() {
+    // Redux dispatch.
+  const dispatch = useDispatch();
+
+  // Read submission status from Redux.
+  const submitLoading = useSelector(
+    (state) => state.companies.submitLoading
+  );
+
+  const submitError = useSelector(
+    (state) => state.companies.submitError
+  );
+
+  // Custom form hook.
   const {
     values,
     valuesSetter,
@@ -84,22 +105,48 @@ function AddCompany() {
     isValid,
   } = useForm(formStructure);
 
-  function handleSubmit(event) {
+  // Local success message.
+  const [successMessage, setSuccessMessage] = useState("");
+  const isSubmittingRef = useRef(false);
+
+  // Handle form submission.
+  async function handleSubmit(event) {
     event.preventDefault();
 
+    if (isSubmittingRef.current) {
+      return;
+    }
+
+    setSuccessMessage("");
+
+    // Validate the form before making the API request.
     if (!validateForm()) {
       return;
     }
 
-    console.log("New Company Details:", {
-      company: values.company,
-      contact: values.contact,
-      country: values.country,
-      email: values.email,
-      logo: values.logo,
-    });
+    // Create FormData for text fields and image.
+    const formData = new FormData();
 
-    alert("Company details submitted successfully!");
+    formData.append("company", values.company.trim());
+    formData.append("contact", values.contact.trim());
+    formData.append("country", values.country);
+    formData.append("email", values.email.trim());
+
+    // Backend expects the image field name.
+    formData.append("image", values.logo);
+
+    isSubmittingRef.current = true;
+    dispatch(clearSubmitStatus());
+
+    try {
+      const result = await dispatch(submitCompany(formData));
+
+      if (submitCompany.fulfilled.match(result)) {
+        setSuccessMessage("Company added successfully!");
+      }
+    } finally {
+      isSubmittingRef.current = false;
+    }
   }
 
   return (
@@ -123,6 +170,24 @@ function AddCompany() {
           onSubmit={handleSubmit}
           className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8"
         >
+          {submitError && (
+            <p
+              role="alert"
+              className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              {submitError}
+            </p>
+          )}
+
+          {successMessage && (
+            <p
+              role="status"
+              className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700"
+            >
+              {successMessage}
+            </p>
+          )}
+
           {/* Company name */}
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -259,10 +324,10 @@ function AddCompany() {
           <div className="border-t border-gray-100 pt-5">
             <button
               type="submit"
-              disabled={!isValid}
+              disabled={!isValid || submitLoading}
               className="w-full rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
             >
-              Add Company
+              {submitLoading ? "Adding Company..." : "Add Company"}
             </button>
 
             <p className="mt-3 text-center text-xs text-gray-400">

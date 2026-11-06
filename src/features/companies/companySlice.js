@@ -44,6 +44,36 @@ export const fetchCompanies = createAsyncThunk(
     };
   }
 );
+export const submitCompany = createAsyncThunk(
+  "companies/submitCompany",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/submit",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        const message = result.errors
+          ? Object.values(result.errors).join(", ")
+          : result.message || "Failed to add company";
+
+        return rejectWithValue(message);
+      }
+
+      return result;
+    } catch (error) {
+      return rejectWithValue(
+        error.message || "Unable to connect to the server"
+      );
+    }
+  }
+);
 
 // Initial Redux state.
 const initialState = {
@@ -52,13 +82,21 @@ const initialState = {
   loading: false,
   error: null,
   currentRequestId: null,
+  submitLoading: false,
+  submitError: null,
+  lastAddedCompany: null,
 };
 
 // Create the companies slice.
 const companySlice = createSlice({
   name: "companies",
   initialState,
-  reducers: {},
+  reducers: {
+      clearSubmitStatus: (state) => {
+      state.submitError = null;
+      state.lastAddedCompany = null;
+    },
+  },
 
   extraReducers: (builder) => {
     builder
@@ -93,7 +131,27 @@ const companySlice = createSlice({
         state.currentRequestId = null;
         state.error =
           action.error.message || "Something went wrong";
+      })
+      // SUBMIT COMPANY: Pending
+      .addCase(submitCompany.pending, (state) => {
+        state.submitLoading = true;
+        state.submitError = null;
+      })
+
+      // SUBMIT COMPANY: Fulfilled
+      .addCase(submitCompany.fulfilled, (state, action) => {
+        state.submitLoading = false;
+        state.submitError = null;
+        state.lastAddedCompany = action.payload;
+      })
+
+      // SUBMIT COMPANY: Rejected
+      .addCase(submitCompany.rejected, (state, action) => {
+        state.submitLoading = false;
+        state.submitError =
+          action.payload || action.error.message;
       });
+
   },
 });
 
@@ -104,6 +162,7 @@ export const selectCompanyData = createSelector(
   [selectCompanyState],
   (companies) => companies.data
 );
-
-// Default export required by store.js.
+// Export regular Redux actions.
+export const { clearSubmitStatus } = companySlice.actions;
+// Export the reducer to be used in the Redux store.
 export default companySlice.reducer;
