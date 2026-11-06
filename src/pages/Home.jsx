@@ -74,7 +74,12 @@ function Home() {
     ESP: "Spain",
   };
 
+  // Define the columns displayed in the table.
   const headers = [
+    {
+      name: "id",
+      label: "ID",
+    },
     {
       name: "company",
       label: "Company",
@@ -106,8 +111,27 @@ function Home() {
                 className="h-5 w-8"
               />
             )}
+
             <span>{countryName}</span>
           </div>
+        );
+      },
+    },
+    {
+      name: "logo",
+      label: "Logo",
+      render: (row) => {
+        if (!row.logo) {
+          return "-";
+        }
+
+        return (
+          <img
+            src={row.logo}
+            alt={`${row.company} logo`}
+            className="h-10 w-10 object-contain"
+            loading="lazy"
+          />
         );
       },
     },
@@ -116,12 +140,15 @@ function Home() {
   const dispatch = useDispatch();
 
   const data = useSelector(selectCompanyData);
+
   const total = useSelector(
     (state) => state.companies.total
   );
+
   const loading = useSelector(
     (state) => state.companies.loading
   );
+
   const error = useSelector(
     (state) => state.companies.error
   );
@@ -131,9 +158,10 @@ function Home() {
   const [page, setPage] = useState(1);
 
   const limit = 100;
+
   const hasMore = data.length < total;
 
-  // Fetch companies from the API
+  // Fetch companies from the API.
   useEffect(() => {
     dispatch(
       fetchCompanies({
@@ -146,14 +174,14 @@ function Home() {
     );
   }, [dispatch, searchText, sortConfig, page]);
 
-  // Load the next page
+  // Load the next page.
   const handleLoadMore = () => {
     if (!loading && hasMore && !error) {
       setPage((currentPage) => currentPage + 1);
     }
   };
 
-  // Infinite scrolling hook
+  // Infinite scrolling hook.
   const bottomRef = useInfiniteScroll({
     loading,
     hasMore,
