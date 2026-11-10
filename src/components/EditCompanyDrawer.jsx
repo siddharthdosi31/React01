@@ -1,5 +1,7 @@
 
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { editCompany } from "../features/companies/companySlice";
 
 const countries = [
   { code: "USA", name: "United States" },
@@ -23,6 +25,11 @@ const countries = [
 ];
 
 function EditCompanyDrawer({ company, onClose }) {
+  const dispatch = useDispatch();
+
+  const editLoading = useSelector((state) => state.companies.editLoading);
+  const editError = useSelector((state) => state.companies.editError);
+
   // Initialize the form using the selected company.
   const [values, setValues] = useState(() => ({
     company: company.company ?? "",
@@ -37,6 +44,7 @@ function EditCompanyDrawer({ company, onClose }) {
 
   const [errors, setErrors] = useState({});
   const [isOpen, setIsOpen] = useState(false);
+  const [newLogoPreview, setNewLogoPreview] = useState(null);
 
   // Trigger the slide-in animation after mounting.
   useEffect(() => {
@@ -47,10 +55,23 @@ function EditCompanyDrawer({ company, onClose }) {
     return () => cancelAnimationFrame(animationFrame);
   }, []);
 
+  // Create and clean up the preview URL when the selected logo changes.
+  useEffect(() => {
+    if (!newLogo) {
+      setNewLogoPreview(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(newLogo);
+    setNewLogoPreview(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [newLogo]);
+
   // Close the panel when Escape is pressed.
   useEffect(() => {
     function handleKeyDown(event) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !editLoading) {
         onClose();
       }
     }
@@ -60,7 +81,7 @@ function EditCompanyDrawer({ company, onClose }) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose]);
+  }, [onClose, editLoading]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -79,15 +100,18 @@ function EditCompanyDrawer({ company, onClose }) {
   function handleLogoChange(event) {
     const file = event.target.files[0] || null;
 
-    setNewLogo(file);
-
     if (file && !["image/jpeg", "image/png"].includes(file.type)) {
+      setNewLogo(null);
+      event.target.value = "";
+
       setErrors((previousErrors) => ({
         ...previousErrors,
         logo: "Only JPG and PNG files are allowed",
       }));
       return;
     }
+
+    setNewLogo(file);
 
     setErrors((previousErrors) => ({
       ...previousErrors,
@@ -130,32 +154,57 @@ function EditCompanyDrawer({ company, onClose }) {
     return Object.keys(newErrors).length === 0;
   }
 
-  function handleSubmit(event) {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!validateForm()) {
-      return;
+    if (!validateForm()) return;
+
+    const formData = new FormData();
+
+    formData.append("company", values.company.trim());
+    formData.append("contact", values.contact.trim());
+    formData.append("country", values.country);
+    formData.append("email", values.email.trim());
+
+    // Only send an image if the user selected a replacement.
+    if (newLogo) {
+      formData.append("image", newLogo);
     }
 
-    // Log the edited values. No API request is made.
-    console.log("Edited Company Details:", {
-      id: company.id,
-      company: values.company.trim(),
-      contact: values.contact.trim(),
-      country: values.country,
-      email: values.email.trim(),
-      logo: newLogo || values.logo,
-    });
+    try {
+      const updatedCompany = await dispatch(
+        editCompany({
+          id: company.id,
+          formData,
+        })
+      ).unwrap();
 
-    onClose();
-  }
+      console.log("Company updated successfully:", updatedCompany);
+
+      onClose();
+    } catch (error) {
+      console.error("Failed to update company:", error);
+
+      if (typeof error === "object" && error !== null) {
+        setErrors(error);
+      } else {
+        setErrors({ submit: String(error) });
+      }
+    }
+  };
 
   const currentLogoUrl =
     typeof values.logo === "string" ? values.logo : null;
 
-  const logoPreview = newLogo
-    ? URL.createObjectURL(newLogo)
-    : currentLogoUrl;
+  const logoPreview = newLogoPreview || currentLogoUrl;
+
+  const submitError =
+    errors.submit ||
+    (typeof editError === "string"
+      ? editError
+      : editError
+        ? Object.values(editError).join(", ")
+        : "");
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -164,9 +213,9 @@ function EditCompanyDrawer({ company, onClose }) {
         type="button"
         aria-label="Close edit panel"
         onClick={onClose}
-        className={`absolute inset-0 h-full w-full bg-black/40 transition-opacity duration-300 ${
-          isOpen ? "opacity-100" : "opacity-0"
-        }`}
+        disabled={editLoading}
+        className={`absolute inset-0 h-full w-full bg-black/40 transition-opacity duration-300 disabled:cursor-not-allowed ${isOpen ? "opacity-100" : "opacity-0"
+          }`}
       />
 
       {/* Sliding panel */}
@@ -174,9 +223,8 @@ function EditCompanyDrawer({ company, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-company-title"
-        className={`absolute right-0 top-0 flex h-full w-full max-w-xl flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`absolute right-0 top-0 flex h-full w-full max-w-xl flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"
+          }`}
       >
         {/* Panel header */}
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5">
@@ -200,8 +248,9 @@ function EditCompanyDrawer({ company, onClose }) {
           <button
             type="button"
             onClick={onClose}
+            disabled={editLoading}
             aria-label="Close edit panel"
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
           >
             <svg
               viewBox="0 0 24 24"
@@ -378,6 +427,12 @@ function EditCompanyDrawer({ company, onClose }) {
                 </p>
               )}
             </div>
+
+            {submitError && (
+              <p className="text-sm text-red-500">
+                {submitError}
+              </p>
+            )}
           </div>
 
           {/* Submit footer */}
@@ -386,16 +441,18 @@ function EditCompanyDrawer({ company, onClose }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-lg border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
+                disabled={editLoading}
+                className="flex-1 rounded-lg border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
 
               <button
                 type="submit"
-                className="flex-1 rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700"
+                disabled={editLoading}
+                className="flex-1 rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Submit
+                {editLoading ? "Saving..." : "Submit"}
               </button>
             </div>
 

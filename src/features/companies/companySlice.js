@@ -75,6 +75,31 @@ export const submitCompany = createAsyncThunk(
   }
 );
 
+export const editCompany = createAsyncThunk(
+  "companies/editCompany",
+  async ({ id, formData }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/edit/${id}`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return rejectWithValue(result.errors || "Failed to edit company");
+      }
+
+      return result;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // Initial Redux state.
 const initialState = {
   data: [],
@@ -85,6 +110,8 @@ const initialState = {
   submitLoading: false,
   submitError: null,
   lastAddedCompany: null,
+  editLoading: false,
+editError: null,
 };
 
 // Create the companies slice.
@@ -92,7 +119,7 @@ const companySlice = createSlice({
   name: "companies",
   initialState,
   reducers: {
-      clearSubmitStatus: (state) => {
+    clearSubmitStatus: (state) => {
       state.submitError = null;
       state.lastAddedCompany = null;
     },
@@ -150,6 +177,29 @@ const companySlice = createSlice({
         state.submitLoading = false;
         state.submitError =
           action.payload || action.error.message;
+      })
+      .addCase(editCompany.pending, (state) => {
+        state.editLoading = true;
+        state.editError = null;
+      })
+
+      .addCase(editCompany.fulfilled, (state, action) => {
+        state.editLoading = false;
+
+        const updatedCompany = action.payload;
+
+        const index = state.data.findIndex(
+          (company) => company.id === updatedCompany.id
+        );
+
+        if (index !== -1) {
+          state.data[index] = updatedCompany;
+        }
+      })
+
+      .addCase(editCompany.rejected, (state, action) => {
+        state.editLoading = false;
+        state.editError = action.payload || action.error.message;
       });
 
   },
