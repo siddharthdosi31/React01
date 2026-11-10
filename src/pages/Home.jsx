@@ -20,7 +20,7 @@ import {
   ES,
 } from "country-flag-icons/react/3x2";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import useInfiniteScroll from "../hooks/useInfiniteScroll";
@@ -184,24 +184,49 @@ function Home() {
   );
 
   const [searchText, setSearchText] = useState("");
+  const [debouncedSearchText, setDebouncedSearchText] = useState("");
   const [sortConfig, setSortConfig] = useState(null);
   const [page, setPage] = useState(1);
 
   const limit = 100;
   const hasMore = data.length < total;
 
+  // Keep track of the previous API request so it can be cancelled.
+  const previousRequest = useRef(null);
+
+  // Wait for 3 seconds after the user stops typing before updating the search.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      setDebouncedSearchText(searchText);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
   // Fetch companies from the API.
   useEffect(() => {
-    dispatch(
+    // Cancel the previous request before starting a new one.
+    if (previousRequest.current) {
+      previousRequest.current.abort();
+    }
+
+    const request = dispatch(
       fetchCompanies({
-        filter: searchText,
+        filter: debouncedSearchText,
         sortConfig,
         page,
         limit,
         append: page > 1,
       })
     );
-  }, [dispatch, searchText, sortConfig, page]);
+
+    previousRequest.current = request;
+
+    return () => {
+      request.abort();
+    };
+  }, [dispatch, debouncedSearchText, sortConfig, page]);
 
   // Load the next page.
   const handleLoadMore = () => {
@@ -218,7 +243,6 @@ function Home() {
   });
 
   function handleSearchChange(event) {
-    setPage(1);
     setSearchText(event.target.value);
   }
 

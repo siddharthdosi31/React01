@@ -9,13 +9,16 @@ import {
 
 export const fetchCompanies = createAsyncThunk(
   "companies/fetchCompanies",
-  async ({
-    filter = "",
-    sortConfig = null,
-    page = 1,
-    limit = 100,
-    append = false,
-  } = {}) => {
+  async (
+    {
+      filter = "",
+      sortConfig = null,
+      page = 1,
+      limit = 100,
+      append = false,
+    } = {},
+    { signal }
+  ) => {
     const params = new URLSearchParams();
 
     params.set("filter", filter.trim());
@@ -28,7 +31,8 @@ export const fetchCompanies = createAsyncThunk(
     }
 
     const response = await fetch(
-      `http://localhost:8080/api?${params.toString()}`
+      `http://localhost:8080/api?${params.toString()}`,
+      { signal }
     );
 
     if (!response.ok) {
@@ -44,6 +48,7 @@ export const fetchCompanies = createAsyncThunk(
     };
   }
 );
+
 export const submitCompany = createAsyncThunk(
   "companies/submitCompany",
   async (formData, { rejectWithValue }) => {
@@ -90,12 +95,18 @@ export const editCompany = createAsyncThunk(
       const result = await response.json();
 
       if (!response.ok) {
-        return rejectWithValue(result.errors || "Failed to edit company");
+        const message = result.errors
+          ? Object.values(result.errors).join(", ")
+          : result.message || "Failed to edit company";
+
+        return rejectWithValue(message);
       }
 
       return result;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(
+        error.message || "Unable to connect to the server"
+      );
     }
   }
 );
@@ -111,7 +122,7 @@ const initialState = {
   submitError: null,
   lastAddedCompany: null,
   editLoading: false,
-editError: null,
+  editError: null,
 };
 
 // Create the companies slice.
@@ -156,6 +167,12 @@ const companySlice = createSlice({
 
         state.loading = false;
         state.currentRequestId = null;
+
+        // Ignore cancelled requests instead of displaying an error.
+        if (action.meta.aborted) {
+          return;
+        }
+
         state.error =
           action.error.message || "Something went wrong";
       })
@@ -185,6 +202,7 @@ const companySlice = createSlice({
 
       .addCase(editCompany.fulfilled, (state, action) => {
         state.editLoading = false;
+        state.editError = null;
 
         const updatedCompany = action.payload;
 
@@ -201,7 +219,6 @@ const companySlice = createSlice({
         state.editLoading = false;
         state.editError = action.payload || action.error.message;
       });
-
   },
 });
 
@@ -212,7 +229,9 @@ export const selectCompanyData = createSelector(
   [selectCompanyState],
   (companies) => companies.data
 );
+
 // Export regular Redux actions.
 export const { clearSubmitStatus } = companySlice.actions;
+
 // Export the reducer to be used in the Redux store.
 export default companySlice.reducer;
